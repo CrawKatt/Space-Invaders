@@ -9,6 +9,7 @@ use components::{
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
+use crate::player::player_invincible_system;
 
 mod components;
 mod enemy;
@@ -35,6 +36,7 @@ const EXPLOSION_LEN: usize = 16;
 const SPRITE_SCALE: f32 = 0.5;
 
 const PLAYER_RESPAWN_DELAY : f64 = 2.;
+const PLAYER_INVINCIBLE_TIME : f32 = 10.;
 const ENEMY_MAX: u32 = 2;
 const FORMATION_MEMBERS_MAX: u32 = 2;
 
@@ -86,6 +88,7 @@ impl PlayerState {
 
 // endregion:   --- Asset Constants ---
 
+// todo: solucionar warnings al intentar compilar a WebAssembly
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
@@ -104,6 +107,7 @@ fn main() {
         .add_system(enemy_laser_hit_player_system)
         .add_system(explosion_to_spawn_system)
         .add_system(explosion_animation_system)
+        .add_system(player_invincible_system)
         .run();
 }
 

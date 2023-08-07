@@ -1,7 +1,7 @@
 use bevy::core::FixedTimestep;
-use crate::{GameTextures, WinSize, PLAYER_SIZE, SPRITE_SCALE, PLAYER_LASER_SIZE, PlayerState, PLAYER_RESPAWN_DELAY};
+use crate::{GameTextures, WinSize, PLAYER_SIZE, SPRITE_SCALE, PLAYER_LASER_SIZE, PlayerState, PLAYER_RESPAWN_DELAY, PLAYER_INVINCIBLE_TIME};
 use bevy::prelude::*;
-use crate::components::{FromPlayer, Laser, Movable, Player, SpriteSize, Velocity};
+use crate::components::{FromPlayer, Laser, Movable, Player, PlayerInvincible, SpriteSize, Velocity};
 
 pub struct PlayerPlugin;
 
@@ -14,7 +14,8 @@ impl Plugin for PlayerPlugin {
                     .with_system(player_spawn_system),
             )
             .add_system(player_keyboard_event_system)
-            .add_system(player_fire_system);
+            .add_system(player_fire_system)
+            .add_system(player_invincible_system);
 
     }
 }
@@ -48,9 +49,26 @@ fn player_spawn_system(
             .insert(Player)
             .insert(SpriteSize::from(PLAYER_SIZE))
             .insert(Movable { auto_despawn: false })
-            .insert(Velocity { x: 0., y: 0. });
+            .insert(Velocity { x: 0., y: 0. })
+            .insert(PlayerInvincible { time_left: PLAYER_INVINCIBLE_TIME, invincible: true });
 
         player_state.spawned();
+    }
+}
+
+
+// todo: otorgar invencibilidad durante 2 segundos al jugador luego de reaparecer
+pub fn player_invincible_system(
+    time: Res<Time>,
+    mut query: Query<(&mut PlayerInvincible, Entity)>,
+    mut commands: Commands
+) {
+    for (mut invincible, entity) in query.iter_mut() {
+        invincible.time_left -= time.delta_seconds();
+
+        if invincible.time_left <= 0. {
+            commands.entity(entity).remove::<PlayerInvincible>();
+        }
     }
 }
 
@@ -94,11 +112,23 @@ fn player_keyboard_event_system(
     kb : Res<Input<KeyCode>>,
     mut query: Query<&mut Velocity, With<Player>>
 ) {
+    // funciones para el eje X (izquierda y derecha)
     if let Ok(mut velocity) = query.get_single_mut() {
         velocity.x = if kb.pressed(KeyCode::A) {
-            -1.
+            -0.8
         } else if kb.pressed(KeyCode::D) {
-            1.
+            0.8
+        } else {
+            0.
+        }
+    }
+
+    // funciones para el eje Y (arriba y abajo)
+    if let Ok(mut velocity) = query.get_single_mut() {
+        velocity.y = if kb.pressed(KeyCode::W) {
+            0.5
+        } else if kb.pressed(KeyCode::S) {
+            -0.5
         } else {
             0.
         }

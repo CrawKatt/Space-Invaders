@@ -62,4 +62,10 @@ impl Default for ExplosionTimer {
     }
 }
 
+#[derive(Component)]
+pub struct PlayerInvincible {
+    pub time_left: f32,
+    pub invincible: bool,
+}
+
 // endregion:   --- Explosion Components ---
