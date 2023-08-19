@@ -1,24 +1,27 @@
 use self::formation::{Formation, FormationMaker};
-use std::f32::consts::PI;
+use crate::components::{Enemy, FromEnemy, Laser, Movable, SpriteSize, Velocity};
+use crate::{
+    EnemyCount, GameTextures, WinSize, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE,
+    TIME_STEP,
+};
 use bevy::core::FixedTimestep;
 use bevy::ecs::schedule::ShouldRun;
-use crate::{ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, EnemyCount, GameTextures, SPRITE_SCALE, TIME_STEP, WinSize};
 use bevy::prelude::*;
-use rand::{Rng, thread_rng};
-use crate::components::{Enemy, FromEnemy, Laser, Movable, SpriteSize, Velocity};
+use rand::{thread_rng, Rng};
+use std::f32::consts::PI;
 
 mod formation;
 
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
-    fn build(&self, app : &mut App) {
+    fn build(&self, app: &mut App) {
         app.insert_resource(FormationMaker::default())
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(1.))
-                .with_system(enemy_spawn_system),
-        )
+            .add_system_set(
+                SystemSet::new()
+                    .with_run_criteria(FixedTimestep::step(1.))
+                    .with_system(enemy_spawn_system),
+            )
             .add_system_set(
                 SystemSet::new()
                     .with_run_criteria(enemy_fire_criteria)
@@ -29,8 +32,8 @@ impl Plugin for EnemyPlugin {
 }
 
 fn enemy_spawn_system(
-    mut commands : Commands,
-    game_textures : Res<GameTextures>,
+    mut commands: Commands,
+    game_textures: Res<GameTextures>,
     mut enemy_count: ResMut<EnemyCount>,
     mut formation_maker: ResMut<FormationMaker>,
     win_size: Res<WinSize>,
@@ -40,15 +43,16 @@ fn enemy_spawn_system(
         let formation = formation_maker.make(&win_size);
         let (x, y) = formation.start;
 
-        commands.spawn_bundle(SpriteBundle {
-            texture: game_textures.enemy.clone(),
-            transform: Transform {
-                translation: Vec3::new(x, y, 10.),
-                scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
+        commands
+            .spawn_bundle(SpriteBundle {
+                texture: game_textures.enemy.clone(),
+                transform: Transform {
+                    translation: Vec3::new(x, y, 10.),
+                    scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        })
+            })
             .insert(Enemy)
             .insert(formation)
             .insert(SpriteSize::from(ENEMY_SIZE));
@@ -71,7 +75,7 @@ fn enemy_fire_system(
     enemy_query: Query<&Transform, With<Enemy>>,
 ) {
     for &tf in enemy_query.iter() {
-        let (x,y) = (tf.translation.x, tf.translation.y);
+        let (x, y) = (tf.translation.x, tf.translation.y);
         // añadir laser enemigo
         commands
             .spawn_bundle(SpriteBundle {
@@ -93,7 +97,6 @@ fn enemy_fire_system(
 }
 
 fn enemy_movement_system(mut query: Query<(&mut Transform, &mut Formation), With<Enemy>>) {
-
     for (mut transform, mut formation) in query.iter_mut() {
         // posicion inicial
         let (x_org, y_org) = (transform.translation.x, transform.translation.y);
@@ -102,13 +105,13 @@ fn enemy_movement_system(mut query: Query<(&mut Transform, &mut Formation), With
         let max_distance = TIME_STEP * formation.speed;
 
         // fixtures para que no se salgan de la pantalla
-        let dir : f32 = if formation.start.0 < 0. { 1. } else { -1. };
+        let dir: f32 = if formation.start.0 < 0. { 1. } else { -1. };
         let (x_pivot, y_pivot) = formation.pivot;
         let (x_radius, y_radius) = formation.radius;
 
         // computar siguiente posición
-        let angle = formation.angle +
-            dir * formation.speed * TIME_STEP / (x_radius.min(y_radius) * PI / 2.);
+        let angle = formation.angle
+            + dir * formation.speed * TIME_STEP / (x_radius.min(y_radius) * PI / 2.);
 
         // computar objetivo x/y
         let x_dst = x_radius * angle.cos() + x_pivot;
@@ -118,7 +121,11 @@ fn enemy_movement_system(mut query: Query<(&mut Transform, &mut Formation), With
         let dx = x_org - x_dst;
         let dy = y_org - y_dst;
         let distance = (dx * dx + dy * dy).sqrt();
-        let distance_ratio = if distance != 0. { max_distance / distance } else { 0. };
+        let distance_ratio = if distance != 0. {
+            max_distance / distance
+        } else {
+            0.
+        };
 
         // computar final x/y
         let x = x_org - dx * distance_ratio;

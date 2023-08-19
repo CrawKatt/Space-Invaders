@@ -1,6 +1,6 @@
+use crate::{WinSize, BASE_SPEED, FORMATION_MEMBERS_MAX};
 use bevy::prelude::Component;
-use rand::{Rng, thread_rng};
-use crate::{BASE_SPEED, FORMATION_MEMBERS_MAX, WinSize};
+use rand::{thread_rng, Rng};
 
 /// Component - Formación de enemigos (por enemigo)
 #[derive(Clone, Component)]
@@ -22,7 +22,10 @@ pub struct FormationMaker {
 /// Implementación de creación de formaciones
 impl FormationMaker {
     pub fn make(&mut self, win_size: &WinSize) -> Formation {
-        match (&self.current_template, self.current_members >= FORMATION_MEMBERS_MAX) {
+        match (
+            &self.current_template,
+            self.current_members >= FORMATION_MEMBERS_MAX,
+        ) {
             // si no hay plantilla, se crea una nueva
             (Some(tmpl), false) => {
                 self.current_members += 1;

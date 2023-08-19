@@ -1,7 +1,12 @@
+use crate::components::{
+    FromPlayer, Laser, Movable, Player, PlayerInvincible, SpriteSize, Velocity,
+};
+use crate::{
+    GameTextures, PlayerState, WinSize, PLAYER_INVINCIBLE_TIME, PLAYER_LASER_SIZE,
+    PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
+};
 use bevy::core::FixedTimestep;
-use crate::{GameTextures, WinSize, PLAYER_SIZE, SPRITE_SCALE, PLAYER_LASER_SIZE, PlayerState, PLAYER_RESPAWN_DELAY, PLAYER_INVINCIBLE_TIME};
 use bevy::prelude::*;
-use crate::components::{FromPlayer, Laser, Movable, Player, PlayerInvincible, SpriteSize, Velocity};
 
 pub struct PlayerPlugin;
 
@@ -16,7 +21,6 @@ impl Plugin for PlayerPlugin {
             .add_system(player_keyboard_event_system)
             .add_system(player_fire_system)
             .add_system(player_invincible_system);
-
     }
 }
 
@@ -25,7 +29,7 @@ fn player_spawn_system(
     mut player_state: ResMut<PlayerState>,
     time: Res<Time>,
     game_textures: Res<GameTextures>,
-    win_size : Res<WinSize>,
+    win_size: Res<WinSize>,
 ) {
     let now = time.seconds_since_startup();
     let last_shot = player_state.last_shot;
@@ -39,7 +43,7 @@ fn player_spawn_system(
                     translation: Vec3::new(
                         0.,
                         bottom + PLAYER_SIZE.1 / 2. * SPRITE_SCALE + 5.,
-                        10.
+                        10.,
                     ),
                     scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
                     ..Default::default()
@@ -48,20 +52,24 @@ fn player_spawn_system(
             })
             .insert(Player)
             .insert(SpriteSize::from(PLAYER_SIZE))
-            .insert(Movable { auto_despawn: false })
+            .insert(Movable {
+                auto_despawn: false,
+            })
             .insert(Velocity { x: 0., y: 0. })
-            .insert(PlayerInvincible { time_left: PLAYER_INVINCIBLE_TIME, invincible: true });
+            .insert(PlayerInvincible {
+                time_left: PLAYER_INVINCIBLE_TIME,
+                invincible: true,
+            });
 
         player_state.spawned();
     }
 }
 
-
 // todo: otorgar invencibilidad durante 2 segundos al jugador luego de reaparecer
 pub fn player_invincible_system(
     time: Res<Time>,
     mut query: Query<(&mut PlayerInvincible, Entity)>,
-    mut commands: Commands
+    mut commands: Commands,
 ) {
     for (mut invincible, entity) in query.iter_mut() {
         invincible.time_left -= time.delta_seconds();
@@ -80,10 +88,10 @@ fn player_fire_system(
 ) {
     if let Ok(player_tf) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
-            let (x,y) = (player_tf.translation.x, player_tf.translation.y);
+            let (x, y) = (player_tf.translation.x, player_tf.translation.y);
             let x_offset = PLAYER_SIZE.0 / 2. * SPRITE_SCALE - 5.;
 
-            let mut spawn_laser = |x_offset : f32| {
+            let mut spawn_laser = |x_offset: f32| {
                 commands
                     .spawn_bundle(SpriteBundle {
                         texture: game_textures.player_laser.clone(),
@@ -103,14 +111,13 @@ fn player_fire_system(
 
             spawn_laser(x_offset);
             spawn_laser(-x_offset);
-
         }
     }
 }
 
 fn player_keyboard_event_system(
-    kb : Res<Input<KeyCode>>,
-    mut query: Query<&mut Velocity, With<Player>>
+    kb: Res<Input<KeyCode>>,
+    mut query: Query<&mut Velocity, With<Player>>,
 ) {
     // funciones para el eje X (izquierda y derecha)
     if let Ok(mut velocity) = query.get_single_mut() {
@@ -134,4 +141,3 @@ fn player_keyboard_event_system(
         }
     }
 }
-

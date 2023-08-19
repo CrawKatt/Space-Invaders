@@ -5,11 +5,12 @@ use components::{
     Enemy, Explosion, ExplosionTimer, ExplosionToSpawn, FromEnemy, FromPlayer, Laser, Movable,
     Player, SpriteSize, Velocity,
 };
+use wasm_bindgen::prelude::wasm_bindgen;
 
+use crate::player::player_invincible_system;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
-use crate::player::player_invincible_system;
 
 mod components;
 mod enemy;
@@ -30,13 +31,13 @@ const ENEMY_SIZE: (f32, f32) = (144., 75.);
 const ENEMY_LASER_SPRITE: &str = "enemy_laser_a_01.png";
 const ENEMY_LASER_SIZE: (f32, f32) = (17., 55.);
 
-const EXPLOSION_SHEET : &str = "explo_a_sheet.png";
+const EXPLOSION_SHEET: &str = "explo_a_sheet.png";
 const EXPLOSION_LEN: usize = 16;
 
 const SPRITE_SCALE: f32 = 0.5;
 
-const PLAYER_RESPAWN_DELAY : f64 = 2.;
-const PLAYER_INVINCIBLE_TIME : f32 = 10.;
+const PLAYER_RESPAWN_DELAY: f64 = 2.;
+const PLAYER_INVINCIBLE_TIME: f32 = 10.;
 const ENEMY_MAX: u32 = 2;
 const FORMATION_MEMBERS_MAX: u32 = 2;
 
@@ -45,22 +46,22 @@ const FORMATION_MEMBERS_MAX: u32 = 2;
 // region:     --- Resources ---
 
 pub struct WinSize {
-    pub w : f32,
-    pub h : f32,
+    pub w: f32,
+    pub h: f32,
 }
 
 struct GameTextures {
     player: Handle<Image>,
-    player_laser : Handle<Image>,
+    player_laser: Handle<Image>,
     enemy: Handle<Image>,
-    enemy_laser : Handle<Image>,
-    explosion : Handle<TextureAtlas>,
+    enemy_laser: Handle<Image>,
+    explosion: Handle<TextureAtlas>,
 }
 
 struct EnemyCount(u32);
 
 struct PlayerState {
-    on: bool, // jugador activo
+    on: bool,       // jugador activo
     last_shot: f64, // -1 si no ha disparado
 }
 
@@ -88,8 +89,12 @@ impl PlayerState {
 
 // endregion:   --- Asset Constants ---
 
-// todo: solucionar warnings al intentar compilar a WebAssembly
 fn main() {
+    run()
+}
+
+#[wasm_bindgen]
+pub fn run() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(WindowDescriptor {
@@ -115,7 +120,7 @@ fn setup_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut windows : ResMut<Windows>,
+    mut windows: ResMut<Windows>,
 ) {
     // camara del juego
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -128,10 +133,7 @@ fn setup_system(
     window.set_position(IVec2::new(2780, 4900));
 
     // añadir recurso WinSize
-    let win_size = WinSize {
-        w : win_w,
-        h : win_h,
-    };
+    let win_size = WinSize { w: win_w, h: win_h };
     commands.insert_resource(win_size);
 
     // añadir recursos de explosiones
@@ -142,19 +144,18 @@ fn setup_system(
     // añadir recursos de texturas
     let game_textures = GameTextures {
         player: asset_server.load(PLAYER_SPRITE),
-        player_laser : asset_server.load(PLAYER_LASER_SPRITE),
+        player_laser: asset_server.load(PLAYER_LASER_SPRITE),
         enemy: asset_server.load(ENEMY_SPRITE),
-        enemy_laser : asset_server.load(ENEMY_LASER_SPRITE),
+        enemy_laser: asset_server.load(ENEMY_LASER_SPRITE),
         explosion,
     };
     commands.insert_resource(game_textures);
     commands.insert_resource(EnemyCount(0));
-
 }
 
 fn movable_system(
     mut commands: Commands,
-    win_size : Res<WinSize>,
+    win_size: Res<WinSize>,
     mut query: Query<(Entity, &Velocity, &mut Transform, &Movable)>,
 ) {
     for (entity, velocity, mut transform, movable) in query.iter_mut() {
@@ -177,7 +178,7 @@ fn movable_system(
 
 fn player_laser_hit_enemy_system(
     mut commands: Commands,
-    mut enemy_count : ResMut<EnemyCount>,
+    mut enemy_count: ResMut<EnemyCount>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
     enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>,
 ) {
@@ -221,7 +222,9 @@ fn player_laser_hit_enemy_system(
                 despawned_entities.insert(laser_entity);
 
                 // iniciar la animacion de explosion
-                commands.spawn().insert(ExplosionToSpawn(enemy_tf.translation.clone()));
+                commands
+                    .spawn()
+                    .insert(ExplosionToSpawn(enemy_tf.translation.clone()));
             }
         }
     }
@@ -258,7 +261,9 @@ fn enemy_laser_hit_player_system(
                 commands.entity(laser_entity).despawn();
 
                 // iniciar la animacion de explosion
-                commands.spawn().insert(ExplosionToSpawn(player_tf.translation.clone()));
+                commands
+                    .spawn()
+                    .insert(ExplosionToSpawn(player_tf.translation.clone()));
 
                 break;
             }
