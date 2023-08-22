@@ -1,4 +1,4 @@
-use bevy::core::Timer;
+use bevy::time::{Timer, TimerMode};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::Component;
 
@@ -58,7 +58,7 @@ pub struct ExplosionTimer(pub Timer);
 
 impl Default for ExplosionTimer {
     fn default() -> Self {
-        Self(Timer::from_seconds(0.05, true))
+        Self(Timer::from_seconds(0.05, TimerMode::Repeating))
     }
 }
 

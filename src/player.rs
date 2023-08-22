@@ -5,7 +5,7 @@ use crate::{
     GameTextures, PlayerState, WinSize, PLAYER_INVINCIBLE_TIME, PLAYER_LASER_SIZE,
     PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
 };
-use bevy::core::FixedTimestep;
+use bevy::time::FixedTimestep;
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
@@ -31,13 +31,13 @@ fn player_spawn_system(
     game_textures: Res<GameTextures>,
     win_size: Res<WinSize>,
 ) {
-    let now = time.seconds_since_startup();
+    let now = time.elapsed_seconds_f64();
     let last_shot = player_state.last_shot;
 
     if !player_state.on && (last_shot == -1. || now > last_shot + PLAYER_RESPAWN_DELAY) {
         let bottom = -win_size.h / 2.;
         commands
-            .spawn_bundle(SpriteBundle {
+            .spawn(SpriteBundle {
                 texture: game_textures.player.clone(),
                 transform: Transform {
                     translation: Vec3::new(
@@ -93,7 +93,7 @@ fn player_fire_system(
 
             let mut spawn_laser = |x_offset: f32| {
                 commands
-                    .spawn_bundle(SpriteBundle {
+                    .spawn(SpriteBundle {
                         texture: game_textures.player_laser.clone(),
                         transform: Transform {
                             translation: Vec3::new(x + x_offset, y + 15., 0.),

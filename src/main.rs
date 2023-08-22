@@ -45,11 +45,13 @@ const FORMATION_MEMBERS_MAX: u32 = 2;
 
 // region:     --- Resources ---
 
+#[derive(Resource)]
 pub struct WinSize {
     pub w: f32,
     pub h: f32,
 }
 
+#[derive(Resource)]
 struct GameTextures {
     player: Handle<Image>,
     player_laser: Handle<Image>,
@@ -58,8 +60,10 @@ struct GameTextures {
     explosion: Handle<TextureAtlas>,
 }
 
+#[derive(Resource)]
 struct EnemyCount(u32);
 
+#[derive(Resource)]
 struct PlayerState {
     on: bool,       // jugador activo
     last_shot: f64, // -1 si no ha disparado
@@ -97,13 +101,15 @@ fn main() {
 pub fn run() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
-        .insert_resource(WindowDescriptor {
-            title: "Rust TankWars!".to_string(),
-            width: 598.0,
-            height: 676.0,
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "Rust TankWars!".to_string(),
+                width: 598.0,
+                height: 676.0,
+                ..Default::default()
+            },
+            ..default()
+        }))
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)
         .add_startup_system(setup_system)
@@ -123,14 +129,15 @@ fn setup_system(
     mut windows: ResMut<Windows>,
 ) {
     // camara del juego
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn(Camera2dBundle::default());
 
     // capturar el tamaño de ventana
     let window = windows.get_primary_mut().unwrap();
     let (win_w, win_h) = (window.width(), window.height());
 
     // posicion de la ventana
-    window.set_position(IVec2::new(2780, 4900));
+    let monitor_selection = MonitorSelection::Primary;
+    window.set_position(monitor_selection, IVec2::new(2780, 4900));
 
     // añadir recurso WinSize
     let win_size = WinSize { w: win_w, h: win_h };
@@ -138,7 +145,7 @@ fn setup_system(
 
     // añadir recursos de explosiones
     let texture_handle = asset_server.load(EXPLOSION_SHEET);
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(64., 64.), 4, 4);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(64., 64.), 4, 4, None, None);
     let explosion = texture_atlases.add(texture_atlas);
 
     // añadir recursos de texturas
@@ -223,8 +230,8 @@ fn player_laser_hit_enemy_system(
 
                 // iniciar la animacion de explosion
                 commands
-                    .spawn()
-                    .insert(ExplosionToSpawn(enemy_tf.translation.clone()));
+                    .spawn(ExplosionToSpawn(enemy_tf.translation.clone()));
+                    //.insert(ExplosionToSpawn(enemy_tf.translation.clone()));
             }
         }
     }
@@ -255,15 +262,16 @@ fn enemy_laser_hit_player_system(
             if let Some(_) = collision {
                 // remover el jugador
                 commands.entity(player_entity).despawn();
-                player_state.shot(time.seconds_since_startup());
+                //player_state.shot(time.seconds_since_startup());
+                player_state.shot(time.elapsed_seconds_f64());
 
                 // remover el laser
                 commands.entity(laser_entity).despawn();
 
                 // iniciar la animacion de explosion
                 commands
-                    .spawn()
-                    .insert(ExplosionToSpawn(player_tf.translation.clone()));
+                    .spawn(ExplosionToSpawn(player_tf.translation.clone()));
+                    //.insert(ExplosionToSpawn(player_tf.translation.clone()));
 
                 break;
             }
@@ -279,7 +287,7 @@ fn explosion_to_spawn_system(
     for (explosion_spawn_entity, explosion_to_spawn) in query.iter() {
         // crear la entidad de explosion
         commands
-            .spawn_bundle(SpriteSheetBundle {
+            .spawn(SpriteSheetBundle {
                 texture_atlas: game_texture.explosion.clone(),
                 transform: Transform {
                     translation: explosion_to_spawn.0,
