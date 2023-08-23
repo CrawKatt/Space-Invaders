@@ -15,8 +15,7 @@ impl Plugin for PlayerPlugin {
         app.insert_resource(PlayerState::default())
             .add_systems(Update, player_spawn_system)
             .add_systems(Update, player_keyboard_event_system)
-            .add_systems(Update, player_fire_system)
-            .add_systems(Update, player_invincible_system);
+            .add_systems(Update, player_fire_system);
     }
 }
 
@@ -58,21 +57,6 @@ fn player_spawn_system(
             });
 
         player_state.spawned();
-    }
-}
-
-// todo: otorgar invencibilidad durante 2 segundos al jugador luego de reaparecer
-pub fn player_invincible_system(
-    time: Res<Time>,
-    mut query: Query<(&mut PlayerInvincible, Entity)>,
-    mut commands: Commands,
-) {
-    for (mut invincible, entity) in query.iter_mut() {
-        invincible.time_left -= time.delta_seconds();
-
-        if invincible.time_left <= 0. {
-            commands.entity(entity).remove::<PlayerInvincible>();
-        }
     }
 }
 

@@ -7,11 +7,11 @@ use components::{
 };
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::player::player_invincible_system;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
 use bevy::window::PrimaryWindow;
+use crate::components::PlayerInvincible;
 
 mod components;
 mod enemy;
@@ -38,15 +38,23 @@ const EXPLOSION_LEN: usize = 16;
 const SPRITE_SCALE: f32 = 0.5;
 
 const PLAYER_RESPAWN_DELAY: f64 = 2.;
-const PLAYER_INVINCIBLE_TIME: f32 = 10.;
+const PLAYER_INVINCIBLE_TIME: f32 = 1.5;
 const ENEMY_MAX: u32 = 2;
 const FORMATION_MEMBERS_MAX: u32 = 2;
-
+const SCOREBOARD_FONT_SIZE: f32 = 40.;
+const SCOREBOARD_TEXT_PADDING: Val = Val::Px(5.0);
+const SCORE_COLOR: Color = Color::rgb(1.0, 0.5, 0.5);
+const TEXT_COLOR: Color = Color::rgb(0.5, 0.5, 0.5);
 const BACKGROUND_IMAGE : &str = "background.png";
 
 // endregion:   --- Game Constants ---
 
 // region:     --- Resources ---
+
+#[derive(Resource)]
+struct Scoreboard {
+    score: usize,
+}
 
 #[derive(Resource)]
 pub struct WinSize {
@@ -104,6 +112,7 @@ fn main() {
 pub fn run() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+        .insert_resource(Scoreboard { score: 0 })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Space Invaders!".into(),
@@ -120,7 +129,7 @@ pub fn run() {
         .add_systems(Update, enemy_laser_hit_player_system)
         .add_systems(Update, explosion_to_spawn_system)
         .add_systems(Update, explosion_animation_system)
-        .add_systems(Update, player_invincible_system)
+        .add_systems(Update, (update_scoreboard_system, bevy::window::close_on_esc))
         .run();
 }
 
@@ -133,10 +142,36 @@ fn setup_system(
     // camara del juego
     commands.spawn(Camera2dBundle::default());
 
+    // insertar fondo
     commands.spawn(SpriteBundle {
         texture: asset_server.load(BACKGROUND_IMAGE),
         ..default()
     });
+
+    // Scoreboard
+    commands.spawn(
+        TextBundle::from_sections([
+            TextSection::new(
+                "Score: ",
+                TextStyle {
+                    font_size: SCOREBOARD_FONT_SIZE,
+                    color: TEXT_COLOR,
+                    ..default()
+                },
+            ),
+            TextSection::from_style(TextStyle {
+                font_size: SCOREBOARD_FONT_SIZE,
+                color: SCORE_COLOR,
+                ..default()
+            }),
+        ])
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                top: SCOREBOARD_TEXT_PADDING,
+                left: SCOREBOARD_TEXT_PADDING,
+                ..default()
+            }),
+    );
 
     let Ok(primary) = query.get_single() else {
         return;
@@ -191,6 +226,7 @@ fn movable_system(
 fn player_laser_hit_enemy_system(
     mut commands: Commands,
     mut enemy_count: ResMut<EnemyCount>,
+    mut scoreboard: ResMut<Scoreboard>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
     enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>,
 ) {
@@ -236,7 +272,9 @@ fn player_laser_hit_enemy_system(
                 // iniciar la animacion de explosion
                 commands
                     .spawn(ExplosionToSpawn(enemy_tf.translation.clone()));
-                    //.insert(ExplosionToSpawn(enemy_tf.translation.clone()));
+
+                // aumentar la puntuación en +1 punto
+                scoreboard.score += 1;
             }
         }
     }
@@ -245,10 +283,22 @@ fn player_laser_hit_enemy_system(
 fn enemy_laser_hit_player_system(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,
+    mut scoreboard: ResMut<Scoreboard>,
+    mut player_invincible_query: Query<(Entity, &mut PlayerInvincible)>,
     time: Res<Time>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromEnemy>)>,
     player_query: Query<(Entity, &Transform, &SpriteSize), With<Player>>,
 ) {
+
+    for(player_entity, mut player_invincible) in player_invincible_query.iter_mut() {
+        player_invincible.time_left -= time.delta_seconds();
+
+        if player_invincible.time_left <= 0. {
+            commands.entity(player_entity).remove::<PlayerInvincible>();
+        }
+        println!("invincible: {}", player_invincible.time_left);
+    }
+
     if let Ok((player_entity, player_tf, player_size)) = player_query.get_single() {
         let player_scale = Vec2::from(player_tf.scale.xy());
 
@@ -265,18 +315,30 @@ fn enemy_laser_hit_player_system(
 
             // si colisiona, eliminar el laser y el jugador
             if let Some(_) = collision {
-                // remover el jugador
-                commands.entity(player_entity).despawn();
-                player_state.shot(time.elapsed_seconds_f64());
 
-                // remover el laser
-                commands.entity(laser_entity).despawn();
+                // verificar si el jugador es invencible antes de realizar acciones
+                if player_invincible_query.get(player_entity).is_err() {
+                    // si el jugador no es invencible, realizar acciones normales
+                    // remover el jugador
+                    commands.entity(player_entity).despawn();
+                    player_state.shot(time.elapsed_seconds_f64());
 
-                // iniciar la animacion de explosion
-                commands
-                    .spawn(ExplosionToSpawn(player_tf.translation.clone()));
+                    // remover el laser
+                    commands.entity(laser_entity).despawn();
 
-                break;
+                    // iniciar la animacion de explosion
+                    commands
+                        .spawn(ExplosionToSpawn(player_tf.translation.clone()));
+
+                    // reiniciar la puntuación
+                    scoreboard.score = 0;
+
+                    break;
+
+                } else {
+                    // si el jugador es invencible, solo eliminar el laser
+                    commands.entity(laser_entity).despawn();
+                }
             }
         }
     }
@@ -320,4 +382,10 @@ fn explosion_animation_system(
             }
         }
     }
+}
+
+// sistema de puntuación
+fn update_scoreboard_system(scoreboard: Res<Scoreboard>, mut query: Query<&mut Text>) {
+    let mut text = query.single_mut();
+    text.sections[1].value = scoreboard.score.to_string();
 }
