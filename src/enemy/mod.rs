@@ -4,8 +4,7 @@ use crate::{
     EnemyCount, GameTextures, WinSize, ENEMY_LASER_SIZE, ENEMY_MAX, ENEMY_SIZE, SPRITE_SCALE,
     TIME_STEP,
 };
-use bevy::time::FixedTimestep;
-use bevy::ecs::schedule::ShouldRun;
+
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 use std::f32::consts::PI;
@@ -17,17 +16,11 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(FormationMaker::default())
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(1.))
-                    .with_system(enemy_spawn_system),
-            )
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(enemy_fire_criteria)
-                    .with_system(enemy_fire_system),
-            )
-            .add_system(enemy_movement_system);
+            .add_systems((
+                enemy_spawn_system,
+                enemy_fire_system.run_if(enemy_fire_criteria),
+                enemy_movement_system,
+            ));
     }
 }
 
@@ -61,11 +54,11 @@ fn enemy_spawn_system(
     }
 }
 
-fn enemy_fire_criteria() -> ShouldRun {
+fn enemy_fire_criteria() -> bool {
     if thread_rng().gen_bool(1. / 60.) {
-        ShouldRun::Yes
+        true
     } else {
-        ShouldRun::No
+        false
     }
 }
 

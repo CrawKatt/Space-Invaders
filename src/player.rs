@@ -5,7 +5,7 @@ use crate::{
     GameTextures, PlayerState, WinSize, PLAYER_INVINCIBLE_TIME, PLAYER_LASER_SIZE,
     PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
 };
-use bevy::time::FixedTimestep;
+
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
@@ -13,14 +13,12 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerState::default())
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(0.5))
-                    .with_system(player_spawn_system),
-            )
-            .add_system(player_keyboard_event_system)
-            .add_system(player_fire_system)
-            .add_system(player_invincible_system);
+            .add_systems((
+                player_spawn_system,
+                player_keyboard_event_system,
+                player_fire_system,
+                player_invincible_system,
+            ));
     }
 }
 

@@ -11,6 +11,7 @@ use crate::player::player_invincible_system;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
+use bevy::window::PrimaryWindow;
 
 mod components;
 mod enemy;
@@ -102,13 +103,12 @@ pub fn run() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                title: "Rust TankWars!".to_string(),
-                width: 598.0,
-                height: 676.0,
+            primary_window: Some(Window {
+                title: "Rust Invaders!".into(),
+                resolution: (598., 676.).into(),
                 ..Default::default()
-            },
-            ..default()
+            }),
+            ..Default::default()
         }))
         .add_plugin(PlayerPlugin)
         .add_plugin(EnemyPlugin)
@@ -126,18 +126,16 @@ fn setup_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut windows: ResMut<Windows>,
+    query: Query<&Window, With<PrimaryWindow>>,
 ) {
     // camara del juego
     commands.spawn(Camera2dBundle::default());
 
-    // capturar el tamaño de ventana
-    let window = windows.get_primary_mut().unwrap();
-    let (win_w, win_h) = (window.width(), window.height());
+    let Ok(primary) = query.get_single() else {
+        return;
+    };
 
-    // posicion de la ventana
-    let monitor_selection = MonitorSelection::Primary;
-    window.set_position(monitor_selection, IVec2::new(2780, 4900));
+    let (win_w, win_h) = (primary.width(), primary.height());
 
     // añadir recurso WinSize
     let win_size = WinSize { w: win_w, h: win_h };

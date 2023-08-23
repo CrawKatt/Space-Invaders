@@ -12,6 +12,6 @@ edition = "2021"
 runner = "wasm-server-runner"
 
 [dependencies]
-bevy = "0.9"
+bevy = "0.10"
 rand = "0.8.5"
 wasm-bindgen = "0.2.87"
