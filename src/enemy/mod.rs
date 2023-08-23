@@ -13,29 +13,6 @@ mod formation;
 
 pub struct EnemyPlugin;
 
-/*
-impl Plugin for EnemyPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(FormationMaker::default())
-            .add_systems(Update, (
-                enemy_spawn_system,
-                enemy_fire_system.run_if(enemy_fire_criteria),
-                enemy_movement_system,
-            ));
-    }
-}
-*/
-/*
-impl Plugin for EnemyPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(FormationMaker::default())
-            .add_systems(Update, enemy_spawn_system)
-            .add_systems(Update, enemy_fire_system.run_if(enemy_fire_criteria))
-            .add_systems(Update, enemy_movement_system);
-    }
-}
-*/
-
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(FormationMaker::default())
@@ -95,7 +72,7 @@ fn enemy_fire_system(
             .spawn(SpriteBundle {
                 texture: game_textures.enemy_laser.clone(),
                 transform: Transform {
-                    translation: Vec3::new(x, y - 15., 0.),
+                    translation: Vec3::new(x, y - 15., 1.), // eje z = profundidad, debe ser 1 para sobrepasar el background
                     rotation: Quat::from_rotation_x(PI),
                     scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
                     ..Default::default()

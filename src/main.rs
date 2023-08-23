@@ -42,6 +42,8 @@ const PLAYER_INVINCIBLE_TIME: f32 = 10.;
 const ENEMY_MAX: u32 = 2;
 const FORMATION_MEMBERS_MAX: u32 = 2;
 
+const BACKGROUND_IMAGE : &str = "background.png";
+
 // endregion:   --- Game Constants ---
 
 // region:     --- Resources ---
@@ -130,6 +132,11 @@ fn setup_system(
 ) {
     // camara del juego
     commands.spawn(Camera2dBundle::default());
+
+    commands.spawn(SpriteBundle {
+        texture: asset_server.load(BACKGROUND_IMAGE),
+        ..default()
+    });
 
     let Ok(primary) = query.get_single() else {
         return;
@@ -260,7 +267,6 @@ fn enemy_laser_hit_player_system(
             if let Some(_) = collision {
                 // remover el jugador
                 commands.entity(player_entity).despawn();
-                //player_state.shot(time.seconds_since_startup());
                 player_state.shot(time.elapsed_seconds_f64());
 
                 // remover el laser
@@ -269,7 +275,6 @@ fn enemy_laser_hit_player_system(
                 // iniciar la animacion de explosion
                 commands
                     .spawn(ExplosionToSpawn(player_tf.translation.clone()));
-                    //.insert(ExplosionToSpawn(player_tf.translation.clone()));
 
                 break;
             }

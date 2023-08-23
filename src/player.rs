@@ -10,20 +10,6 @@ use bevy::prelude::*;
 
 pub struct PlayerPlugin;
 
-/*
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(PlayerState::default())
-            .add_systems(Update, (
-                player_spawn_system,
-                player_keyboard_event_system,
-                player_fire_system,
-                player_invincible_system,
-            ));
-    }
-}
-*/
-
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerState::default())
