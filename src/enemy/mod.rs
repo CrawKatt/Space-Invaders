@@ -13,14 +13,35 @@ mod formation;
 
 pub struct EnemyPlugin;
 
+/*
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(FormationMaker::default())
-            .add_systems((
+            .add_systems(Update, (
                 enemy_spawn_system,
                 enemy_fire_system.run_if(enemy_fire_criteria),
                 enemy_movement_system,
             ));
+    }
+}
+*/
+/*
+impl Plugin for EnemyPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(FormationMaker::default())
+            .add_systems(Update, enemy_spawn_system)
+            .add_systems(Update, enemy_fire_system.run_if(enemy_fire_criteria))
+            .add_systems(Update, enemy_movement_system);
+    }
+}
+*/
+
+impl Plugin for EnemyPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(FormationMaker::default())
+            .add_systems(Update, enemy_spawn_system)
+            .add_systems(Update, enemy_fire_system.run_if(enemy_fire_criteria))
+            .add_systems(Update, enemy_movement_system);
     }
 }
 

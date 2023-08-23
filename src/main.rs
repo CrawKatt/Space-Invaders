@@ -104,21 +104,21 @@ pub fn run() {
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Rust Invaders!".into(),
-                resolution: (598., 676.).into(),
+                title: "Space Invaders!".into(),
+                resolution: (1920., 1080.).into(),
                 ..Default::default()
             }),
             ..Default::default()
         }))
-        .add_plugin(PlayerPlugin)
-        .add_plugin(EnemyPlugin)
-        .add_startup_system(setup_system)
-        .add_system(movable_system)
-        .add_system(player_laser_hit_enemy_system)
-        .add_system(enemy_laser_hit_player_system)
-        .add_system(explosion_to_spawn_system)
-        .add_system(explosion_animation_system)
-        .add_system(player_invincible_system)
+        .add_plugins(PlayerPlugin)
+        .add_plugins(EnemyPlugin)
+        .add_systems(Startup, setup_system)
+        .add_systems(Update, movable_system)
+        .add_systems(Update, player_laser_hit_enemy_system)
+        .add_systems(Update, enemy_laser_hit_player_system)
+        .add_systems(Update, explosion_to_spawn_system)
+        .add_systems(Update, explosion_animation_system)
+        .add_systems(Update, player_invincible_system)
         .run();
 }
 
