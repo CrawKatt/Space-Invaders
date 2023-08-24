@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
-use bevy::window::PrimaryWindow;
+use bevy::window::{PrimaryWindow, WindowResized};
 use crate::components::PlayerInvincible;
 
 mod components;
@@ -124,11 +124,10 @@ pub fn run() {
         .insert_resource(Scoreboard { score: 0 })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Space Invaders!".into(),
-                resolution: (1920., 1080.).into(),
-                ..Default::default()
+                fit_canvas_to_parent: true,
+                ..default()
             }),
-            ..Default::default()
+                ..default()
         }))
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
