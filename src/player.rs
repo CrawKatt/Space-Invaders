@@ -1,10 +1,5 @@
-use crate::components::{
-    FromPlayer, Laser, Movable, Player, PlayerInvincible, SpriteSize, Velocity,
-};
-use crate::{
-    GameTextures, PlayerState, WinSize, PLAYER_INVINCIBLE_TIME, PLAYER_LASER_SIZE,
-    PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE,
-};
+use crate::components::{FromPlayer, Laser, Movable, Player, PlayerInvincible, SpriteSize, Velocity};
+use crate::{GameTextures, PlayerState, WinSize, PLAYER_INVINCIBLE_TIME, PLAYER_LASER_SIZE, PLAYER_RESPAWN_DELAY, PLAYER_SIZE, SPRITE_SCALE, PlayerShootSound};
 
 use bevy::prelude::*;
 
@@ -65,6 +60,7 @@ fn player_fire_system(
     kb: Res<Input<KeyCode>>,
     game_textures: Res<GameTextures>,
     query: Query<&Transform, With<Player>>,
+    sound: Res<PlayerShootSound>
 ) {
     if let Ok(player_tf) = query.get_single() {
         if kb.just_pressed(KeyCode::Space) {
@@ -86,7 +82,11 @@ fn player_fire_system(
                     .insert(FromPlayer)
                     .insert(SpriteSize::from(PLAYER_LASER_SIZE))
                     .insert(Movable { auto_despawn: true })
-                    .insert(Velocity { x: 0., y: 1. });
+                    .insert(Velocity { x: 0., y: 1. })
+                    .insert(AudioBundle {
+                        source: sound.0.clone(),
+                        settings: PlaybackSettings::DESPAWN,
+                    });
             };
 
             spawn_laser(x_offset);

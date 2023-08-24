@@ -22,6 +22,9 @@ mod player;
 const TIME_STEP: f32 = 1. / 60.;
 const BASE_SPEED: f32 = 500.;
 
+const PLAYER_SHOOT_SOUND: &str = "player_shoot.ogg";
+const PLAYER_EXPLOSION_SOUND : &str = "player_explosion.ogg";
+
 const PLAYER_SPRITE: &str = "player_a_01.png";
 const PLAYER_SIZE: (f32, f32) = (144., 75.);
 const PLAYER_LASER_SPRITE: &str = "player_laser_a_01.png";
@@ -50,6 +53,12 @@ const BACKGROUND_IMAGE : &str = "background.png";
 // endregion:   --- Game Constants ---
 
 // region:     --- Resources ---
+
+#[derive(Resource)]
+struct ExplosionSound(Handle<AudioSource>);
+
+#[derive(Resource)]
+pub struct PlayerShootSound(Handle<AudioSource>);
 
 #[derive(Resource)]
 struct Scoreboard {
@@ -129,7 +138,7 @@ pub fn run() {
         .add_systems(Update, enemy_laser_hit_player_system)
         .add_systems(Update, explosion_to_spawn_system)
         .add_systems(Update, explosion_animation_system)
-        .add_systems(Update, (update_scoreboard_system, bevy::window::close_on_esc))
+        .add_systems(Update, update_scoreboard_system)
         .run();
 }
 
@@ -139,6 +148,15 @@ fn setup_system(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     query: Query<&Window, With<PrimaryWindow>>,
 ) {
+
+    // insertar sonido de disparo para el jugador
+    let player_shoot_sound = asset_server.load(PLAYER_SHOOT_SOUND);
+    commands.insert_resource(PlayerShootSound(player_shoot_sound));
+
+    // insertar sonido de explosión
+    let explosion_sound = asset_server.load(PLAYER_EXPLOSION_SOUND);
+    commands.insert_resource(ExplosionSound(explosion_sound));
+
     // camara del juego
     commands.spawn(Camera2dBundle::default());
 
@@ -283,7 +301,6 @@ fn player_laser_hit_enemy_system(
 fn enemy_laser_hit_player_system(
     mut commands: Commands,
     mut player_state: ResMut<PlayerState>,
-    mut scoreboard: ResMut<Scoreboard>,
     mut player_invincible_query: Query<(Entity, &mut PlayerInvincible)>,
     time: Res<Time>,
     laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromEnemy>)>,
@@ -296,7 +313,6 @@ fn enemy_laser_hit_player_system(
         if player_invincible.time_left <= 0. {
             commands.entity(player_entity).remove::<PlayerInvincible>();
         }
-        println!("invincible: {}", player_invincible.time_left);
     }
 
     if let Ok((player_entity, player_tf, player_size)) = player_query.get_single() {
@@ -330,9 +346,6 @@ fn enemy_laser_hit_player_system(
                     commands
                         .spawn(ExplosionToSpawn(player_tf.translation.clone()));
 
-                    // reiniciar la puntuación
-                    scoreboard.score = 0;
-
                     break;
 
                 } else {
@@ -348,6 +361,7 @@ fn explosion_to_spawn_system(
     mut commands: Commands,
     game_texture: Res<GameTextures>,
     query: Query<(Entity, &ExplosionToSpawn)>,
+    sound: Res<ExplosionSound>,
 ) {
     for (explosion_spawn_entity, explosion_to_spawn) in query.iter() {
         // crear la entidad de explosion
@@ -362,6 +376,12 @@ fn explosion_to_spawn_system(
             })
             .insert(Explosion)
             .insert(ExplosionTimer::default());
+
+        commands.spawn(AudioBundle {
+            source: sound.0.clone(),
+            // auto-despawn al terminar de reproducir el sonido
+            settings: PlaybackSettings::DESPAWN,
+        });
 
         // despawnear la entidad de explosion_to_spawn
         commands.entity(explosion_spawn_entity).despawn();
@@ -385,7 +405,10 @@ fn explosion_animation_system(
 }
 
 // sistema de puntuación
-fn update_scoreboard_system(scoreboard: Res<Scoreboard>, mut query: Query<&mut Text>) {
+fn update_scoreboard_system(
+    scoreboard: Res<Scoreboard>,
+    mut query: Query<&mut Text>,
+) {
     let mut text = query.single_mut();
     text.sections[1].value = scoreboard.score.to_string();
 }
