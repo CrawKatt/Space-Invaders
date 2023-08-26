@@ -10,7 +10,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use std::collections::HashSet;
-use bevy::window::{PrimaryWindow, WindowResized};
+use bevy::render::camera::ScalingMode;
+use bevy::window::PrimaryWindow;
 use crate::components::PlayerInvincible;
 
 mod components;
@@ -124,10 +125,12 @@ pub fn run() {
         .insert_resource(Scoreboard { score: 0 })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
+                title: "Spade Invaders!".into(),
+                resizable: true,
                 fit_canvas_to_parent: true,
                 ..default()
             }),
-                ..default()
+            ..default()
         }))
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
@@ -137,7 +140,7 @@ pub fn run() {
         .add_systems(Update, enemy_laser_hit_player_system)
         .add_systems(Update, explosion_to_spawn_system)
         .add_systems(Update, explosion_animation_system)
-        .add_systems(Update, update_scoreboard_system)
+        .add_systems(Update, (update_scoreboard_system, bevy::window::close_on_esc))
         .run();
 }
 
@@ -157,7 +160,16 @@ fn setup_system(
     commands.insert_resource(ExplosionSound(explosion_sound));
 
     // camara del juego
-    commands.spawn(Camera2dBundle::default());
+    let mut camera = Camera2dBundle::default();
+
+    // ajustar la camara al tamaño de la ventana
+    camera.projection.scaling_mode = ScalingMode::Fixed {
+        width: 1920.0,
+        height: 1080.0,
+    };
+
+    // insertar la camara
+    commands.spawn(camera);
 
     // insertar fondo
     commands.spawn(SpriteBundle {

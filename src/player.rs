@@ -82,15 +82,21 @@ fn player_fire_system(
                     .insert(FromPlayer)
                     .insert(SpriteSize::from(PLAYER_LASER_SIZE))
                     .insert(Movable { auto_despawn: true })
-                    .insert(Velocity { x: 0., y: 1. })
+                    .insert(Velocity { x: 0., y: 1. });
+                    /*
                     .insert(AudioBundle {
                         source: sound.0.clone(),
                         settings: PlaybackSettings::DESPAWN,
                     });
+                     */
             };
 
             spawn_laser(x_offset);
             spawn_laser(-x_offset);
+            commands.spawn(AudioBundle {
+                source: sound.0.clone(),
+                settings: PlaybackSettings::default(),
+            });
         }
     }
 }
