@@ -135,6 +135,7 @@ pub fn run() {
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemyPlugin)
         .add_systems(Startup, setup_system)
+        .add_systems(PreUpdate,update_camera_system)
         .add_systems(Update, movable_system)
         .add_systems(Update, player_laser_hit_enemy_system)
         .add_systems(Update, enemy_laser_hit_player_system)
@@ -144,12 +145,48 @@ pub fn run() {
         .run();
 }
 
+#[derive(Component)]
+pub struct MainCamera;
+
+pub fn setup_camera_system(mut commands: Commands) {
+    commands.spawn((
+        Camera2dBundle::default(),
+        MainCamera
+    ));
+}
+
+/// Sistema para actualizar la cámara principal
+fn update_camera_system(
+    mut cameras: Query<&mut OrthographicProjection, With<MainCamera>>,
+    windows: Query<&Window, With<PrimaryWindow>>
+) {
+
+    let Ok(mut camera) = cameras.get_single_mut() else {
+        return;
+    };
+
+    let Ok(window) = windows.get_single() else {
+        return;
+    };
+
+    camera.scaling_mode = ScalingMode::Fixed {
+        width: window.width(),
+        height: window.height(),
+    };
+
+}
+
 fn setup_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     query: Query<&Window, With<PrimaryWindow>>,
 ) {
+
+    // Cámara principal
+    let Ok(primary) = query.get_single() else {
+        return;
+    };
 
     // insertar sonido de disparo para el jugador
     let player_shoot_sound = asset_server.load(PLAYER_SHOOT_SOUND);
@@ -159,17 +196,17 @@ fn setup_system(
     let explosion_sound = asset_server.load(PLAYER_EXPLOSION_SOUND);
     commands.insert_resource(ExplosionSound(explosion_sound));
 
-    // camara del juego
+    // cámara del juego
     let mut camera = Camera2dBundle::default();
 
     // ajustar la camara al tamaño de la ventana
     camera.projection.scaling_mode = ScalingMode::Fixed {
-        width: 1920.0,
-        height: 1080.0,
+        width: 1920.,
+        height: 1080.,
     };
 
     // insertar la camara
-    commands.spawn(camera);
+    commands.spawn((camera, MainCamera));
 
     // insertar fondo
     commands.spawn(SpriteBundle {
@@ -201,10 +238,6 @@ fn setup_system(
                 ..default()
             }),
     );
-
-    let Ok(primary) = query.get_single() else {
-        return;
-    };
 
     let (win_w, win_h) = (primary.width(), primary.height());
 
